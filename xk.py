@@ -137,6 +137,11 @@ class XK():
         }
 
         response = requests.post(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/publicCourse.do?vpn-12-o2-xk.bit.edu.cn', cookies=self.cookies, headers=self.headers, data=data)
+        
+        if ('msg' in response.json() and "登陆信息" in response.json()['msg']) or 'dataList' not in response.json():
+            self.headers["token"]=self.refresh_token()
+            return self.list_GX(page,ans,text,type)
+        
         if len(response.json()['dataList'])==0:
             return ans
         ans+=response.json()['dataList']
@@ -226,6 +231,10 @@ class XK():
         response = requests.post(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/volunteer.do?vpn-12-o2-xk.bit.edu.cn', cookies=self.cookies, headers=self.headers, data=data)
         if "成功" in response.json()['msg']:
             return True, response.json()
+        
+        if 'msg' in response.json() and "未查询到登陆信息" in response.json()['msg']:
+            self.headers["token"]=self.refresh_token()
+        
         return False, response.json()
     
     def unselect(self,classId):
