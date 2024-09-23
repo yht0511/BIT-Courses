@@ -6,13 +6,16 @@ import requests
 from rich import print
 import settings
 import utils
+import webvpn
 
 class XK():
     def __init__(self):
+        self.ticket = webvpn.login(settings.student_code,settings.password).split("wengine_vpn_ticketwebvpn_bit_edu_cn=")[1].split(";")[0]
+        print(f"获取到ticket:{self.ticket}")
         self.cookies = {
             'show_vpn': '0',
             'show_faq': '1',
-            'wengine_vpn_ticketwebvpn_bit_edu_cn': settings.ticket,
+            'wengine_vpn_ticketwebvpn_bit_edu_cn': self.ticket,
             'refresh': '0',
         }
 
@@ -58,7 +61,7 @@ class XK():
     def refresh_token(self):
         vtoken,captcha=self.get_captcha()
         response = requests.get(f'{settings.URL}/xsxkapp/sys/xsxkapp/student/check/login.do?vpn-12-o2-xk.bit.edu.cn&timestrap={int(time.time()*1000)}\
-                                &loginName={settings.student_code}&loginPwd={settings.password}&verifyCode={captcha}&vtoken={vtoken}', headers=self.headers, cookies=self.cookies)
+                                &loginName={settings.student_code}&loginPwd={settings.password_encoded}&verifyCode={captcha}&vtoken={vtoken}', headers=self.headers, cookies=self.cookies)
         if "message" in response.json() and "过期" in response.json()['message']:
             print("WEBVPN会话已过期,请重新登录")
             sys.exit(0)
@@ -109,7 +112,7 @@ class XK():
         response = requests.get(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/batch.do?vpn-12-o2-xk.bit.edu.cn&timestamp={int(time.time()*1000)}', cookies=self.cookies, headers=self.headers)
         return response.json()["dataList"]
     
-    def list_GX(self,page=0,ans=[],text="",type="XGXK"):
+    def list_GX(self,page=0,ans=[],text="",type="XGXK",only_first=False):
         """列出所有公选课
 
         Args:
@@ -130,7 +133,7 @@ class XK():
                  "checkCapacity":"2",
                  "queryContent":text
                  },
-                "pageSize":"100",
+                "pageSize":"100" if not only_first else "10",
                 "pageNumber":str(page),
                 "order":""
                 }),
@@ -145,9 +148,11 @@ class XK():
         if len(response.json()['dataList'])==0:
             return ans
         ans+=response.json()['dataList']
+        if only_first:
+            return ans
         return self.list_GX(page+1,ans,text,type)
      
-    def list_all(self,page=0,ans=[],text=""):
+    def list_all(self,page=0,ans=[],text="",only_first=False):
         """列出全校课表
 
         Args:
@@ -178,6 +183,8 @@ class XK():
         if len(response.json()['dataList'])==0:
             return ans
         ans+=response.json()['dataList']
+        if only_first:
+            return ans
         return self.list_all(page+1,ans,text)
     
     def query(self,name):
@@ -189,7 +196,7 @@ class XK():
         Returns:
             dict: 公选课信息
         """
-        return self.list_GX(text=name)[0]
+        return self.list_GX(text=name,only_first=True)[0]
     
     def status(self,name):
         """查询是否有空位
