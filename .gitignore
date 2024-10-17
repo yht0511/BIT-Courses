@@ -2,4 +2,4 @@
 *.json
 __pycache__/
 *.pyc
-settings.py
+*.png

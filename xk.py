@@ -10,13 +10,13 @@ import webvpn
 
 class XK():
     def __init__(self):
-        self.ticket = webvpn.login(settings.student_code,settings.password).split("wengine_vpn_ticketwebvpn_bit_edu_cn=")[1].split(";")[0]
+        self.ticket = "6db8d3c8617e010b" # webvpn.login(settings.student_code,settings.password).split("wengine_vpn_ticketwebvpn_bit_edu_cn=")[1].split(";")[0]
         print(f"获取到ticket:{self.ticket}")
         self.cookies = {
+            'wengine_vpn_ticketwebvpn_bit_edu_cn': self.ticket,
             'show_vpn': '0',
             'show_faq': '1',
-            'wengine_vpn_ticketwebvpn_bit_edu_cn': self.ticket,
-            'refresh': '0',
+            'refresh': '1',
         }
 
         self.headers = {
@@ -25,9 +25,8 @@ class XK():
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Origin': 'https://webvpn.bit.edu.cn',
             'Pragma': 'no-cache',
-            'Referer': settings.URL,
+            'Referer': settings.URL+"/xsxkapp/sys/xsxkapp/*default/index.do",
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
@@ -59,21 +58,37 @@ class XK():
             self.headers["token"]=self.refresh_token()
         
     def refresh_token(self):
+        self.send_input(settings.student_code)
         vtoken,captcha=self.get_captcha()
-        response = requests.get(f'{settings.URL}/xsxkapp/sys/xsxkapp/student/check/login.do?vpn-12-o2-xk.bit.edu.cn&timestrap={int(time.time()*1000)}\
-                                &loginName={settings.student_code}&loginPwd={settings.password_encoded}&verifyCode={captcha}&vtoken={vtoken}', headers=self.headers, cookies=self.cookies)
+        response = requests.get(f'{settings.URL}/xsxkapp/sys/xsxkapp/student/check/login.do?vpn-12-o2-xk.bit.edu.cn\
+                                &timestrap={int(time.time()*1000)}\
+                                &loginName={settings.student_code}\
+                                &loginPwd={settings.password_encoded if settings.password_encoded else utils.get_encoded_password(settings.password)}\
+                                &verifyCode={captcha}\
+                                &vtoken={vtoken}'.replace(" ",""),
+                                headers=self.headers, cookies=self.cookies)
         if "message" in response.json() and "过期" in response.json()['message']:
             print("WEBVPN会话已过期,请重新登录")
             sys.exit(0)
         if int(response.json()['code'])!=1:
             print(f"登录失败!错误信息:{response.json()['msg']}")
             print("重试中...")
+            # raise Exception("登录失败")
             return self.refresh_token()
         self.name=response.json()["data"]["name"]
         self.token=response.json()["data"]["token"]
         print(f"登录成功,姓名:{self.name},token:{self.token}")
         return self.token
     
+    def send_input(self,text):
+        data={
+            "name": "",
+            "type": "text",
+            "value": text
+        }
+        response = requests.post(settings.Input_URL, cookies=self.cookies, headers=self.headers, data=data)
+        return
+        
     def get_captcha(self):
         """获取验证码
 
@@ -82,7 +97,9 @@ class XK():
             str: 验证码
         """
         vtoken,path=self.get_captcha_img()
-        return vtoken,utils.get_captcha(path)
+        captcha=utils.get_captcha(path).upper()
+        self.send_input(captcha)
+        return vtoken,captcha
     
     def get_captcha_img(self):
         """获取验证码图片
@@ -106,6 +123,8 @@ class XK():
             str: 验证码token
         """
         response = requests.get(f'{settings.URL}/xsxkapp/sys/xsxkapp/student/4/vcode.do?vpn-12-o2-xk.bit.edu.cn&timestamp={int(time.time()*1000)}', cookies=self.cookies, headers=self.headers)
+        if 'data' not in response.json():
+            raise Exception("用户名或密码错误.")
         return response.json()['data']['token']
     
     def get_elective_batch_codes(self):
@@ -196,7 +215,10 @@ class XK():
         Returns:
             dict: 公选课信息
         """
-        return self.list_GX(text=name,only_first=True)[0]
+        res=self.list_GX(text=name,only_first=True)
+        if not res:
+            raise Exception(f"未找到课程:{name}")
+        return res[0]
     
     def status(self,name):
         """查询是否有空位
