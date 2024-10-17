@@ -10,7 +10,7 @@ import webvpn
 
 class XK():
     def __init__(self):
-        self.ticket = "6db8d3c8617e010b" # webvpn.login(settings.student_code,settings.password).split("wengine_vpn_ticketwebvpn_bit_edu_cn=")[1].split(";")[0]
+        self.ticket = webvpn.login(settings.student_code,settings.password).split("wengine_vpn_ticketwebvpn_bit_edu_cn=")[1].split(";")[0]
         print(f"获取到ticket:{self.ticket}")
         self.cookies = {
             'wengine_vpn_ticketwebvpn_bit_edu_cn': self.ticket,
