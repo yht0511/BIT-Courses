@@ -4,4 +4,4 @@ courses.json
 __pycache__/
 *.pyc
 *.png
-*.db
+Thumbs.db
