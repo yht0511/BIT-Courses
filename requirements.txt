@@ -1,0 +1,5 @@
+ddddocr==1.5.5
+PyExecJS==1.5.1
+Requests==2.32.3
+rich==13.9.2
+selenium==4.25.0
