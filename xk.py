@@ -197,8 +197,9 @@ class XK():
                 "order":""
                 }),
         }
-
-        response = requests.post(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/queryCourse.do?vpn-12-o2-xk.bit.edu.cn', cookies=self.cookies, headers=self.headers, data=data)
+        try:
+            response = requests.post(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/queryCourse.do?vpn-12-o2-xk.bit.edu.cn', cookies=self.cookies, headers=self.headers, data=data)
+        except: return self.list_all(page,ans,text,only_first)
         if len(response.json()['dataList'])==0:
             return ans
         ans+=response.json()['dataList']
@@ -257,7 +258,9 @@ class XK():
                     }
                 }),
         }
-        response = requests.post(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/volunteer.do?vpn-12-o2-xk.bit.edu.cn', cookies=self.cookies, headers=self.headers, data=data)
+        try:
+            response = requests.post(f'{settings.URL}/xsxkapp/sys/xsxkapp/elective/volunteer.do?vpn-12-o2-xk.bit.edu.cn', cookies=self.cookies, headers=self.headers, data=data)
+        except: return self.select(classId)
         if "成功" in response.json()['msg']:
             return True, response.json()
         
